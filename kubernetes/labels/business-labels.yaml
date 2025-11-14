@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment
+  labels:
+    owner: payment-team
+    project: fraud-detection
+    business-unit: "80432"

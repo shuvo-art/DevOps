@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-one
+  labels:
+    app: microservice-one
+spec:             
+  replicas: 2
+  selector: 
+    matchLabels:
+      app: microservice-one
+  template:
+    metadata:
+      labels:
+        app: microservice-one
+    spec:
+      containers:
+      - name: ms-one
+        image: my-private-repo/ms-one:1.0
+        ports:
+        - containerPort: 3000
+      - name: log-collector
+        image: my-private-repo/log-collector:1.0
+        ports:
+        - containerPort: 9000

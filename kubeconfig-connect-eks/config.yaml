@@ -1,0 +1,24 @@
+apiVersion: v1
+clusters:
+- cluster:
+    server: https://10A6677B7GBAA8541A0SJDHDKS6565.y14.eu-west-3.eks.amazonaws.com
+    certificate-authority-data: <base64-encoded-ca-cert> - <cat .kube/config>
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: aws
+  name: aws
+current-context: aws
+kind: Config
+preferences: {}
+users:
+- name: aws
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      command: aws-iam-authenticator
+      args:
+        - "token"
+        - "-i"
+        - "demo-cluster"
