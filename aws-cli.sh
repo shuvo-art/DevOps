@@ -826,3 +826,30 @@ $ terraform plan
 $ terraform apply -auto-approve
 $ ssh ec2-user@35.180.137.101
 $ ls
+
+// Lesson-172 ( Terraform Modules )
+$ git checkout -b feature/modules
+$ cd ../terraform-ec2-project/
+$ cd modules/
+$ cd webserver/
+$ touch main.tf variables.tf outputs.tf
+$ cd ../subnet/
+$ touch main.tf
+$ touch variables.tf
+$ touch outputs.tf
+
+// Create/Change in Modules
+$ terraform init
+$ terraform plan
+$ terraform apply -auto-approve
+
+// Lesson-173 ( Modules - Part 3 )
+$ terraform plan
+$ terraform init
+$ terraform plan
+$ terraform plan
+// crash.log file created
+$ terraform apply -auto-approve
+$ ssh ec2-user@15.188.238.237
+$ docker -v
+
