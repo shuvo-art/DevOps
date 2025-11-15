@@ -822,3 +822,7 @@ $ git push --set-upstream origin feature/deploy-to-ec2-default-components
 
 // Lesson-170 ( Provisioners in Terraform )
 $ git checkout -b feature/provisioners
+$ terraform plan
+$ terraform apply -auto-approve
+$ ssh ec2-user@35.180.137.101
+$ ls
