@@ -853,3 +853,32 @@ $ terraform apply -auto-approve
 $ ssh ec2-user@15.188.238.237
 $ docker -v
 
+// Lesson-174 ( Terraform and AWS EKS Part-1 )
+$ git checkout -b feature/eks
+$ terraform init
+$ terraform plan
+
+// Lesson-175 ( Terraform and AWS EKS Part-2 )
+$ terraform init
+// To download local, template, random, kubernetes ...
+// .terraform/modules/eks/aws_auth.tf >>> resource "kubernetes_config_map" "aws_auth" {
+$ terraform plan
+$ terraform apply -auto-approve
+
+// Lesson-176 ( Terraform and AWS EKS Part-3 )
+// Connect kubectl with EKS cluster kubeconfig file at ~/.kube/config => contains cluster endpoint and certificate-authority-data, token, iam authenticator
+// Prerequisite: AWS CLI, kubectl, aws-iam-authenticator installed in local machine
+$ aws eks update-kubeconfig --name myapp-eks-cluster --region eu-west-2
+$ kubectl get node
+$ kubectl get pod
+$ kubectl apply -f ~/Documents/nginx-config.yaml
+$ kubectl get pod
+$ kubectl get svc // nginx-service-LoadBalancer
+$ cat ~/Documents/nginx-config.yaml
+
+// Destroy all resources
+$ terraform destroy -auto-approve
+$ terraform state list
+// terraform.tfstate file resource array is empty now
+
+
