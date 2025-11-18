@@ -915,6 +915,15 @@ $ git add .
 $ git commit -m "add jenkinsfile with sshagent and terraform commands"
 $ git push --set-upstream origin feature/jenkinsfile-sshagent-with-tf
 
+$ #ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@15.236.201.113
+$ chmod 400 ~/Downloads/myapp-key-pair.pem
+
+$ ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@15.236.201.113
+$ ls 
+$ docker ps
+$ exit
+// docker login on the server from jenkinsfile to pull docker image
+
 
 
 
