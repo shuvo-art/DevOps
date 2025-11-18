@@ -881,4 +881,40 @@ $ terraform destroy -auto-approve
 $ terraform state list
 // terraform.tfstate file resource array is empty now
 
+// Lesson-178 ( Jenkins CI/CD Pipeline with Terraform )
+$ ssh root@137.184.124.136 => Digital Ocean Droplet with Jenkins installed
+$ docker ps
+$ docker exec -it -u 0 12c5878a1341 bash
+root@12c5878a1341:/# cat /etc/os-release
+# Already inside Jenkins container as root
+root@12c5878a1341:/# apt-get update
+root@12c5878a1341:/# apt-get install -y wget gnupg lsb-release
+
+# Add HashiCorp GPG key
+root@12c5878a1341:/# wget -O- https://apt.releases.hashicorp.com/gpg | \
+gpg --dearmor | \
+tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+# Add HashiCorp repository
+root@12c5878a1341:/# echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+tee /etc/apt/sources.list.d/hashicorp.list
+
+# Update and install Terraform
+root@12c5878a1341:/# apt-get update
+root@12c5878a1341:/# apt-get install -y terraform
+
+# Verify installation
+root@12c5878a1341:/# terraform -v
+
+# Exit from Jenkins container
+root@12c5878a1341:/# exit
+
+// Lesson-179 ( Jenkins Pipeline for Terraform )
+$ git checkout -b feature/jenkinsfile-sshagent-with-tf
+$ git add .
+$ git commit -m "add jenkinsfile with sshagent and terraform commands"
+$ git push --set-upstream origin feature/jenkinsfile-sshagent-with-tf
+
+
+
 
