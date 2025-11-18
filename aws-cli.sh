@@ -915,6 +915,10 @@ $ git add .
 $ git commit -m "add jenkinsfile with sshagent and terraform commands"
 $ git push --set-upstream origin feature/jenkinsfile-sshagent-with-tf
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> b218f8e (remove secret)
 $ #ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@15.236.201.113
 $ chmod 400 ~/Downloads/myapp-key-pair.pem
 
@@ -923,7 +927,29 @@ $ ls
 $ docker ps
 $ exit
 // docker login on the server from jenkinsfile to pull docker image
+// After Jenkins pipeline execution check the EC2 instance
+$ ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@15.236.201.113
+$ docker ps
 
+// Not run on locally
+$ terraform init
+$ terraform plan
 
+// Build History => #4 DateTime => Replay
+            steps {
+                script {
+                    dir('terraform') {
+                        sh 'terraform destroy -auto-approve'
+                    }
+                }
+            }
+// Remove EC2 instance deploy part from jenkinsfile
+            steps {
+                script {
+                    echo "waiting for EC2 instance to be ready..."
+                }
+            }
+// Again Build now from scratch in One shot
 
-
+$ ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@35.180.38.241
+$ docker ps
