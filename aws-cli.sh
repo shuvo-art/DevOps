@@ -953,3 +953,12 @@ $ terraform plan
 
 $ ssh -i ~/Downloads/myapp-key-pair.pem ec2-user@35.180.38.241
 $ docker ps
+
+// Lesson-180 ( Terraform State )
+// Create a s3 bucket
+// Provide a Bucket name: myapp-bucket, Region, Block all public access:checked, Versioning:enabled
+// make sure to execute new configuration in terraform/main.tf file, destroy previous resources and re-create all resources
+$ git status
+$ git add .
+$ git commit -m "add s3 backend for terraform state"
+$ git push
