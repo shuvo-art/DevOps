@@ -962,3 +962,103 @@ $ git status
 $ git add .
 $ git commit -m "add s3 backend for terraform state"
 $ git push
+// Build now in jenkins #7: Time => Console Output
+// Check in S3 bucket: myapp-bucket => Objects => terraform.tfstate file created
+// In terraform folder
+$ terraform init
+$ terraform state list
+
+// Lesson-206 ( Boto3 and Connect to AWS )
+$ pip install boto3
+// User home directory
+$ ls ~/.aws
+$ cat ~/.aws/credentials
+$ cat ~/.aws/config
+
+// Lesson-209 ( tf with boto3 )
+$ terraform plan
+$ terraform apply -auto-approve
+
+// Lesson-210 ( Scheduling Status Checks )
+$ pip install schedule
+$ terraform plan
+$ terraform apply -auto-approve
+
+// Lesson-211 ( Add Tags to Ec2 Servers any resources )
+// Manually create Ec2 instance and run add-env-tags.py script
+
+// Lesson-212 ( Print EKS Cluster Info )
+// In terraform-eks-project folder
+$ terraform plan
+$ terraform apply -auto-approve
+// Check running Instances and EKS => Clusters in AWS console
+
+// Lesson-213 ( Data Backup as Snapshot on EC2 Instance )
+// Create 2 Ec2 instance added tag: Name:dev, Name:prod
+// Elastic Block Store: Volumes, Snapshots
+// Automatic Create Snapshots from Volumes Every day using python script
+
+// Manually tagging the volumes that are related to production server
+// But when more production server running then do it using python
+// Only backup snapshot for production server
+
+// Lesson-214 ( Cleanup EC2 snapshots )
+// follow cleanup-snapshots.py
+
+// Lesson-217
+// Create a server on Linode, Add a Linode: https://cloud.linode.com/linodes/create
+// Choose distribution, region, Linode plan: Shared CPU, Root Password, SSH keys
+$ cat ~/.ssh/id_rsa.pub
+// Label SSH: python-monitoring and Paste the SSH key
+$ ssh root@139.162.130.236
+$ cat /etc/os-release => Debian/GNU linux
+$ apt update
+$ apt install -y ca-certificates curl gnupg lsb-release
+
+$ sudo install -m 0755 -d /etc/apt/keyrings
+$ curl -fsSL https://download.docker.com/linux/debian/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+$ sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+$ echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+$ sudo apt update
+$ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+$ docker run -d -p 8080:80 nginx
+$ 139.162.130.236:8080 => Browser
+// On Linode Analytics, Network, Storage, Configuration, Backups, Activity Feed, Settings
+// On Network => Using DNS with :8080 also for Browser search
+$ pip install requests
+
+// Lesson-218 ( Website Monitoring Automation )
+// https://myaccount.google.com/u/1/apppasswords
+$ export EMAIL_ADDRESS="shuvo83qn@gmail.com"
+$ echo $EMAIL_ADDRESS
+$ vim ~/.bash_profile
+// Intellij monitor-website:Edit Configuration: Environment variables: Add env variables using key:value format
+$ docker stop 12c5878a1341
+
+
+// Lesson-218 ( Website Monitoring Automation )
+$ pip install paramiko
+// "CTRL + p" to see parameters list in Pycharm
+// Linode Profile: SSH key
+$ ssh -i ~/.ssh/id_rsa root@139.162.130.236
+$ pwd
+
+// Lesson-219 ( Website Monitoring Automation )
+$ pip install linode-api4
+// Linode Profile: Display: API Tokens
+// Create a Personal Access Token If not exist any
+// Provide Label: python and Read/Write permission
+
+$ docker ps
+$ docker stop 12c5878a1341
+
+$ ssh -i ~/.ssh/id_rsa root@139.162.130.236
+$ docker ps
