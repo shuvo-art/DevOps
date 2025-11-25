@@ -1,0 +1,25 @@
+---
+- name: Configure nginx web server
+  hosts: webserver
+  tasks:
+  - name: install nginx server
+    apt:
+      name: nginx=1.28.0-6ubuntu1
+      state: present
+  - name: start nginx server
+    service:
+      name: nginx
+      state: started
+---
+- name: Configure nginx web server
+  hosts: webserver
+  tasks:
+  - name: uninstall nginx server
+    apt:
+      name: nginx=1.28*
+      state: absent
+  - name: stop nginx server
+    service:
+      name: nginx
+      state: stopped
+      

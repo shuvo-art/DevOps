@@ -1,0 +1,27 @@
+# Create container
+- name: Create a data container
+  docker_container:
+    name: mydata
+    image: busybox
+    volumes:
+      - /data
+
+# Start container
+- name: Start a container with a command
+  docker_container:
+    name: sleepy
+    image: ubuntu:14.04
+    command: ["sleep", "infinity"]
+
+# Apply configuration
+- name: Add container to networks
+  docker_container:
+    name: sleepy
+    networks:
+      - name: TestingNet
+        ipv4_address: 172.1.1.18
+        links:
+          - sleeper
+      - name: TestingNet2
+        ipv4_address: 172.1.10.20
+        

@@ -1,0 +1,16 @@
+# Execute multiple modules in a sequence
+tasks:
+  - name: create directory for nginx
+    file:
+      path: /path/to/nginx/dir
+      state: directory
+  
+  - name: install nginx latest version
+    yum:
+      name: nginx
+      state: latest
+
+  - name: start nginx
+    service:
+      name: nginx
+      state: started

@@ -1,0 +1,46 @@
+- name: install and start nginx server
+- hosts: webservers
+  remote_user: root
+
+  # Execute multiple modules in a sequence
+  tasks:
+    - name: create directory for nginx
+      file:
+        path: /path/to/nginx/dir
+        state: directory
+    
+    - name: install nginx latest version
+      yum:
+        name: nginx
+        state: latest
+
+    - name: start nginx
+      service:
+        name: nginx
+        state: started
+
+- name: rename table, set owner and truncate it
+- hosts: databases
+  remote_user: root
+  vars:
+    tablename: foo
+    tableowner: someuser
+
+  tasks:
+    # Rename table
+    - name: Rename table {{ tablename }} to bar
+      postgresql_table:
+        table: {{ tablename }}
+        rename: bar
+
+    # Set user privilege
+    - name: Set owner to someuser
+      postgresql_table:
+        name: {{ tablename }}
+        owner: someuser
+
+    # Truncate table
+    - name: Truncate table {{ tablename }}
+      postgresql_table:
+        name: {{ tablename }}
+        truncate: yes

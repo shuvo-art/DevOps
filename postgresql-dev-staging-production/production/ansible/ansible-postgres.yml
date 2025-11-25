@@ -1,0 +1,56 @@
+---
+- name: Setup PostgreSQL Database
+  hosts: database_servers
+  become: yes
+  vars:
+    postgres_version: 15
+    postgres_db: myapp_db
+    postgres_user: admin
+    postgres_password: SecurePassword123
+
+  tasks:
+  - name: Install PostgreSQL
+    apt:
+      name: 
+        - postgresql-{{ postgres_version }}
+        - postgresql-contrib
+        - python3-psycopg2
+      state: present
+
+  - name: Start PostgreSQL service
+    systemd:
+      name: postgresql
+      state: started
+      enabled: yes
+
+  - name: Create database
+    postgresql_db:
+      name: "{{ postgres_db }}"
+      state: present
+    become_user: postgres
+
+  - name: Create database user
+    postgresql_user:
+      name: "{{ postgres_user }}"
+      password: "{{ postgres_password }}"
+      db: "{{ postgres_db }}"
+      priv: "ALL"
+      state: present
+    become_user: postgres
+
+  - name: Setup backup script
+    copy:
+      content: |
+        #!/bin/bash
+        BACKUP_DIR="/backups/postgres"
+        DATE=$(date +%Y%m%d_%H%M%S)
+        pg_dump -U {{ postgres_user }} {{ postgres_db }} > $BACKUP_DIR/backup_$DATE.sql
+      dest: /usr/local/bin/backup-postgres.sh
+      mode: '0755'
+
+  - name: Schedule daily backups with cron
+    cron:
+      name: "PostgreSQL daily backup"
+      hour: "2"
+      minute: "0"
+      job: "/usr/local/bin/backup-postgres.sh"
