@@ -10,22 +10,44 @@
           - nodejs
           - npm
 
+- name: Create new linux user for nodejs app
+  hosts: 159.89.1.54
+  vars_file: 
+    - project-vars.yaml
+  tasks:
+    - name: Create linux user
+      user:
+        name: "{{linux_name}}"
+        comment: shuvo user
+        group: admin
+      register: user_creation_result
+    - debug: msg={{ user_creation_result.uid }}
+
 - name: Deploy nodejs app
   hosts: 159.89.1.54
+  become: yes
+  become_user: "{{linux_name}}"
+  vars_file: 
+    - project-vars.yaml
+#    - location: /Users/shuvo83qn/Demo-projects/Bootcamp
+#    - version: 1.0.0
+#    - user_home_dir: /home/{{linux_name}}
   tasks:
     - name: Unpack the nodejs file
       unarchive:
-        src: /Users/shuvo83qn/Demo-projects/Bootcamp/nodejs-app/nodejs-app-1.0.0.tgz
-        dest: /root/
+        src: "{{location}}/nodejs-app/nodejs-app-{{version}}.tgz" 
+        dest: "{{user_home_dir}}"
+      register: user_creation_result
+    - debug: msg={{ user_creation_result }}
     - name: Install nodejs app dependencies
       npm:
-        path: /root/package
+        path: "{{user_home_dir}}/package"
     - name: Start the appliction
       command:
-        chdir: /root/package/app
+        chdir: "{{user_home_dir}}/package/app"
         cmd: node server
-      async: 1000 # run for 1000 seconds
-      poll: 0 # don't wait for the task to complete
+      async: 1000  # run for 1000 seconds
+      poll: 0  # don't wait for the task to complete
     - name: Ensure app is running
       shell: ps aux | grep node
       register: app_status

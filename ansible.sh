@@ -314,3 +314,103 @@ $ ansible-playbook -i hosts deploy-node-one.yaml
 // Lesson-232 ( Project: Part 3 - Automate Node App Deployment )
 # Execute task as a non-root user
 # User for Each app or Each team member
+$ ansible-playbook -i hosts deploy-node-one.yaml
+
+// Lesson-233 ( Variables in Ansible Playbooks )
+# registered variables
+$ ansible-playbook -i hosts deploy-node-one.yaml
+
+#       register: app_status
+#    - debug: msg={{ app_status.stdout_lines}}
+Task [debug]**************************************
+ok: [159.89.1.54] => {
+    "msg": {
+        "append": false,
+        "changed": false,
+        "comment": "shuvo admin",
+        "failed": false,
+        "group": 116,
+        "home": "/home/shuvo",
+        "move_home": false,
+        "name": "shuvo",
+        "shell": "/bin/sh",
+        "state": "present",
+        "uid": 1000
+    }
+}
+
+# Parametrize playbooks using variables
+# Set values for test environment => Ansible playbook => TEST environment
+# Set values for production environment => Ansible playbook => PRODUCTION environment
+# "{{ node_file_location }}" => variable
+# /Users/shuvo83qn/Demo-projects/Bootcamp/nodejs-app/nodejs-app-{{version}}.tgz
+# "{{ location }}/nodejs-app/nodejs-app-{{version}}.tgz" => parameterized with variable
+# --extra-vars or -e flag to pass variables at runtime
+$ ansible-playbook -i hosts deploy-node-one.yaml -e "version=1.0.0 location=/Users/shuvo83qn/Demo-projects/Bootcamp"
+$ ansible-playbook -i hosts deploy-node-one.yaml -e "version=1.0.0 location=/Users/shuvo83qn/Demo-projects/Bootcamp linux_name=shuvo"
+
+# Create a variable file: project-vars.yaml
+$ ansible-playbook -i hosts deploy-node-one.yaml
+
+// Lesson-234 ( Project: Automate Nexus Deployment )
+# Manual Process: Create Droplet, SSH into Droplet, Install Java, Download Nexus, Unpack Nexus, Start Nexus
+$ ansible-playbook -i hosts deploy-nexus.yaml
+
+# Check Nexus running or not
+$ ssh root@134.122.73.78
+$ ls /opt/
+$ java
+$ netstat
+$ ls /opt/
+$ rm -rf /opt/sonatype-work # remove all
+
+# Rename folder
+$ mv nexus-3.30.0-01 nexus
+
+# "find" module => return a list of file based on sepcific criteria
+# shell command executed when: not true => False => shell command not executed
+
+// Lesson-235 (  Project: Automate Nexus Deployment )
+# For checking nexus user to own nexus folder
+$ ansible-playbook -i hosts deploy-nexus.yaml
+$ ls -l /opt/
+
+$ su - nexus
+$ pwd
+$ exit
+$ ls -l /opt/nexus
+
+$ vim /opt/nexus/bin/nexus.rc
+#run_as_user=""
+run_as_user="nexus"
+
+:q!
+
+# Do the task with ansible
+$ ansible-playbook -i hosts deploy-nexus.yaml
+$ vim /opt/nexus/bin/nexus.rc
+#run_as_user=""
+# BEGIN ANSIBLE MANAGED BLOCK
+run_as_user="nexus"
+# END ANSIBLE MANAGED BLOCK
+
+# Delete 3 line to check "lineinfile" module
+$ ansible-playbook -i hosts deploy-nexus.yaml
+
+$ ps aux | grep nexus
+$ /opt/nexus/bin/nexus run
+
+# For nexus create bigger size droplet
+# For new droplet execute
+$ ansible-playbook -i hosts deploy-nexus.yaml
+
+$ ssh root@134.122.77.88
+$ ps aux | grep nexus
+$ kill 16479
+
+# Rerun playbook
+$ ansible-playbook -i hosts deploy-nexus.yaml
+
+# Pause and Waitfor modules documentation check
+
+// Lesson-236 ( Git and Default Inventory )

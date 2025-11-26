@@ -1,0 +1,4 @@
+version: 1.0.0 
+location: /Users/shuvo83qn/Demo-projects/Bootcamp 
+linux_name: shuvo
+user_home_dir: /home/{{linux_name}}
