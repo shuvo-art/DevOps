@@ -414,3 +414,134 @@ $ ansible-playbook -i hosts deploy-nexus.yaml
 # Pause and Waitfor modules documentation check
 
 // Lesson-236 ( Git and Default Inventory )
+# Create new repo and push
+
+// Lesson-237 ( Ansible and Docker )
+# Create AWS EC2 Instance with Terraform
+# Configure Inventory file to connect to AWS EC2 Instance
+# Write Ansible Playbook: Install Docker & docker-compose & Copy docker-compose file to server
+# Start Docker containers to run application
+# Using main.tf file
+$ terraform init
+$ terraform plan
+$ terraform apply -auto-approve
+
+# output publice_ip_address
+$ ssh root@35.181.5.225
+$ apt => not found
+$ yum
+
+# become_user: root => by default
+$ ansible-playbook deploy-docker.yaml
+# python => version2 => exit() => python3
+$ docker
+# no package docker-compose available in yum repository => sudo yum install docker-compose
+
+# Download docker-compose
+$ sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+$ sudo chmod +x /usr/local/bin/docker-compose
+# On ec2 Instance
+$ uname -s
+$ uname -m
+
+# Jinja 2 template
+$ ansible-playbook deploy-docker.yaml
+$ docker-compose
+
+# To check docker running
+$ docker pull redis
+
+# start docker-deamon
+$ sudo systemctl start docker
+
+# To run without sudo
+$ sudo usermod -aG docker ec2-user
+# But ec2-user not added to docker group to the current session
+$ exit
+# Then this time ec2-user added into docker group
+$ sudo docker pull redis
+
+# To check current user already added which groups
+$ groups
+
+# remove user from groups
+$ sudo gpasswd -d ec2-user docker
+
+# For testing exit then reconnect
+
+# Check using ansible-playbook
+$ ansible-playbook deploy-docker.yaml => not work for permission
+
+# After fixing meta: reset_connection
+$ ansible-playbook deploy-docker.yaml
+
+// Lesson-238 ( Ansible and Docker: "community.docker" Ansible Collection )
+# command and shell use only, when there is no appropiate Ansible module available, not Idempotent
+# community.docker.docker_image
+# <namespace>.<collection>.<module/plugin>
+# Fully Qualified Collection Name: FQCN
+$ ansible-playbook deploy-docker.yaml
+
+# Install python docker module corresponding ansible module
+# pull private image
+$ docker pull shuvo83qn/demo-app:java-maven-2.0
+
+# Interactive input: prompts
+# prompting the user for variables lets you avoid recording sensitive data like passwords
+$ docker pull shuvo83qn/demo-app:java-maven-2.0
+$ ls ~/.docker/config.json
+
+$ ansible-playbook deploy-docker.yaml
+# run docker-compose
+$ docker-compose -f docker-compose.yaml up
+$ docker images
+$ docker rmi shuvo83qn/demo-app:java-maven-2.0
+
+# rerun playbook
+$ ansible-playbook deploy-docker.yaml
+
+# docker-compose python module needed
+$ docker ps
+
+# Check ansible-playbook completely new server
+$ terraform destroy -auto-approve
+
+# Create a new Ec2
+$ terraform apply -auto-approve
+# Copy new ip_address and paste it to hosts
+
+# check new server
+$ ssh ec2-user@35.180.25.170
+$ docker ps
+
+// Lesson-239 ( Ansible and Terraform )
+# Provisioning server using Terraform, Configuring server using Ansible
+# Get the ip_address from tf, update hosts, execute ansible command manually
+# tf hand over to ansible, only one command to execute terraform apply
+# Destroy the current setup
+$ terraform destroy -auto-approve
+
+# Tf provisioner: local-exe, remote-exec, file
+# --inventory takes a file location as a parameter or "," seperated ip addresses
+$ terraform apply 
+
+$ ssh ec2-user@15.237.41.0
+$ sudo docker ps
+
+# Wait for Ec2 fully initialized
+# Ansible needs to check first, whether EC2 is ready or not
+# wait_for module logic true, before executing the next task
+$ ssh ec2-user@15.237.41.0
+$ sudo docker ps
+
+# Using null_resource from tf
+$ terraform init
+$ terraform apply
+
+// Lesson-240 ( Dynamic Inventory )
+# Managing an inventory, spinning up and down for auto-scaling to accomodate load-balancing
+# hard-coding ip_addresses on hosts set dynamically
+# Create 3 Ec2 instances with tf and dynamically connect to these instance without hardcoding Ip addresses on Ansible playbook hosts
+$ terraform init
+$ terraform apply
+
