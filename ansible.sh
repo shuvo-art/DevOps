@@ -733,3 +733,10 @@ $ git push --set-upstream origin feature/ansible
 $ ssh root@167.99.136.157
 $ ls
 
+# git commit -m "Fix security warning for pem file"
+sh 'scp $keyfile root@167.99.136.157:/root/ssh-key.pem' => sh "scp ${keyfile} root@167.99.136.157:/root/ssh-key.pem"
+
+# Build Now pipeline again
+# Check Console Output logs any warnings exists or not
+
+# Another Jenkins plugin: SSH Pipeline Steps needs to run ansible-playbook cmd on ansible server
