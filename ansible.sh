@@ -715,3 +715,21 @@ $ ssh-keygen -p -f .ssh/id_rsa -m pem -P "" -N "" # Classic openssh format
 $ cat Downloads/ansible-jenkins.pem
 
 # withCredentials copy ec2-server-key context to ansible server
+
+# Create jenkins pipeline to execute jenkins for branch: feature/ansible 
+$ git checkout -b feature/ansible
+$ git push --set-upstream origin feature/ansible
+
+# New Item: Enter an item name: ansible-pipeline
+# select: pipeline 
+# configure: Pipeline: Pipeline script from scm
+# SCM: Git
+# Repository URL: https://github.com/shuvo-art/DevOps.git
+# Credentials: Select existing or create new
+# Branch Name: feature/ansible
+# Save and Build Now
+
+# Check ansible files and ssh-key.pem file available or not
+$ ssh root@167.99.136.157
+$ ls
+
