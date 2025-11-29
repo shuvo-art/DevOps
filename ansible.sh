@@ -740,3 +740,6 @@ sh 'scp $keyfile root@167.99.136.157:/root/ssh-key.pem' => sh "scp ${keyfile} ro
 # Check Console Output logs any warnings exists or not
 
 # Another Jenkins plugin: SSH Pipeline Steps needs to run ansible-playbook cmd on ansible server
+
+# New commit for remote execution with cmd: "ls -l; ansible-playbook my-playbook.yaml"
+# push to repo and Build Now
