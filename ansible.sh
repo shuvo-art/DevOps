@@ -545,3 +545,173 @@ $ terraform apply
 $ terraform init
 $ terraform apply
 
+# Dynamic Inventory plugins vs Inventory script
+# Functionality: connects to AWS account and get server information
+# plugins make use of Ansible features like: State management, written in yaml format, where scripts in python
+# Plugins/Scripts specific to Infrastructure provider: For AWS, you need aws specific plugins/scripts
+$ ansible-doc -t inventory -l
+
+# aws_ec2 inventory
+$ pip install boto3
+$ pip install botocore
+
+# Used to display ansible-inventory configured information
+$ ansible-inventory -i inventory_aws_ec2.yaml --list
+$ ansible-inventory -i inventory_aws_ec2.yaml --graph
+
+# Assign public dns name to conncect ec2 outside the vpc
+$ terraform destroy -auto-approve
+$ terraform apply -auto-approve
+$ ansible-inventory -i inventory_aws_ec2.yaml --graph
+
+# Configure Ansible to use dynamic inventory
+$ ansible-playbook -i inventory_aws_ec2.yaml deploy-docker-new-user.yaml
+
+# If new server added or removed to tf same playbook command do the staff
+$ ansible-playbook -i inventory_aws_ec2.yaml deploy-docker-new-user.yaml
+
+# if added invertory:inventory_aws_ec2.yaml to ansible.cfg 
+$ ansible-playbook deploy-docker-new-user.yaml
+
+# Target specific server
+$ terraform destroy -auto-approve
+
+# Two dev & Two prod
+# Specific ansible playbook for dev or prod server
+# filter attributes: image-id, instance-state-name etc.
+$ ansible-inventory -i inventory_aws_ec2.yaml --graph
+
+# Group: aws_ec2, Group: dev_servers, Group: prod_servers
+# keyed_group: used key:tags value that get from any attribute came from ansible-inventory -i inventory_aws_ec2.yaml --list output
+$ ansible-playbook deploy-docker-new-user.yaml
+
+# Grouping based instance_type
+$ ansible-inventory -i inventory_aws_ec2.yaml --graph
+
+// Lesson-241 ( Automate Deployment into k8s cluster )
+# Create k8s cluster on AWS EKS using tf
+# Configure Ansible to connect to EKS cluster
+# Deploy Deployment and Service component
+
+# In ansible-eks/terraform-eks-project folder
+$ terraform init
+$ terraform apply
+
+# Create a Namespace in EKS cluster
+# To connect to the eks-cluster using kubectl with kubeconfig_myapp-eks-cluster with ansible
+# community.kubernetes.k8s module to run kubectl command
+# Which cluster and how to connect? needs clusters-address and credentials
+# Openshift Python client is used to perform CRUD operations on k8s objects
+# PyYAML = YAML parser and emitter for Python
+$ python3 -c "import openshift"
+$ python3 -c "import yaml"
+
+# pip defaults to installing Python packages to a system directory(/usr/local/libpython3.7) => requires root access
+# --user makes pip install packages in your home directory instead => no need special previleges
+$ pip3 install openshift --user
+$ pip3 install PyYAML --user
+
+# Check
+$ python3 -c "import openshift"
+$ python3 -c "import yaml"
+
+# Run playbook
+$ ansible-playbook deploy-to-k8s.yaml
+
+# Connect k8s cluster and check
+$ export KUBECONFIG=~/f/Shanto_PC/BdCalling/online-shop-microservices/ansible-eks/terraform-eks-project/kubeconfig_myapp-eks-cluster/kubeconfig_myapp-eks-cluster
+$ kubectl get ns # check my-app exists or not
+
+# Deploy app in new namespace
+$ ansible-playbook deploy-to-k8s.yaml
+$ kubectl get pod -n my-app
+$ kubectl get svc -n my-app # AWS assign public_dns and public_ip with it, search in browser using that
+
+# using definition: attribute you can write same k8s yaml file inside ansible playbook
+# Set environment variable for kubeconfig
+
+# Using local terminal where ansible-playbook execute:
+$ export K8S_AUTH_KUBECONFIG=~/f/Shanto_PC/BdCalling/online-shop-microservices/ansible-eks/terraform-eks-project/kubeconfig_myapp-eks-cluster/kubeconfig_myapp-eks-cluster
+$ ansible-playbook deploy-to-k8s.yaml
+
+// Lesson-242 ( Ansible Integration in Jenkins Pipeline Project - Part 1 )
+# Create a DO server for Jenkins => Installed tools(tf,kubectl,...) inside Jenkins server/container => then commands available for Jenkins jobs
+# Create dedicated server for Ansible & Install Ansible on that server(Control Node), two seperate DO droplet
+# Execute Ansible Playbook from Jenkins Pipeline to configure 2 EC2 Instance
+# Create 2 EC2 Instance
+# Configure everything from scratch with Ansible
+# Create a Pipeline in Jenkins
+# Connect pipeline to Java Maven Project
+# Create Jenkinsfile that executes Ansible Playbook on the remote Ansible server
+$ ssh root@167.99.136.157
+$ apt update
+$ apt install ansible
+$ ansible
+
+# Install boto3 and botocore
+$ apt install python3-pip
+$ python3
+exit()
+
+$ pip3 install boto3 botocore # Not works
+# Fix options
+# Option 1: Recommended: Install distro packages on the control node (recommended for Ansible control node)
+sudo apt update
+sudo apt install -y python3-boto3 python3-pip python3-venv
+# verify
+python3 -c "import boto3,botocore; print(boto3.__version__, botocore.__version__)"
+
+# Option 2:Create a Python virtual environment and install packages there (recommended if you want isolated pip)
+sudo apt update
+sudo apt install -y python3-venv python3-pip
+python3 -m venv /opt/ansible-venv
+sudo chown -R $(id -u):$(id -g) /opt/ansible-venv
+source /opt/ansible-venv/bin/activate
+pip install --upgrade pip
+pip install boto3 botocore
+# run ansible from the venv so it uses installed libraries:
+pip install ansible-core  # or ansible
+ansible --version
+deactivate
+# If Ansible runs from the control node outside the venv, configure the inventory or ansible.cfg to use venv interpreter:
+# ansible.cfg (or inventory vars)
+[defaults]
+interpreter_python = /opt/ansible-venv/bin/python
+
+# Ensure AWS credentials are available to Ansible to get dynamic inventory using plugin aws_ec2 hosts:
+ansible-inventory -i inventory_aws_ec2.yaml --graph
+ansible-playbook -i inventory_aws_ec2.yaml --list-hosts
+
+$ mkdir .aws
+$ cd .aws/
+$ vim credentials
+# IAM role for the control node or
+# AWS CLI configured (~/.aws/credentials) like local: cat .aws/credentials 
+# Environment variables: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION
+$ exit
+
+# Create 2 EC2 Instances
+# Create new key pair: Download Key Pair: ansible-jenkins.pem => this private key needs to provide Ansible server to connect to the EC2 Instances
+
+// Lesson-243 ( Jenkinsfile: Copy Files from Jenkins to Ansible Server )
+# Create a new branch in java-maven-app => git checkout -b feature/ansible
+# Jenkins Server ---------(trigger to execute ansible-playbook cmd to )------------> Ansible Server:Control Node
+# So that Jenkins has to copy these files(ansible.cfg, inventory_aws_ec2.yaml, my-playbook.yaml, ansible-jenkins.pem) from project repo to remote ansible server
+
+# SSH Agent used using ssh key to connect remote server and then copy files using scp command
+# Install SSH Agent plugins on Jenkins server
+# http://137.184.124.136:8080/manage/pluginManager/
+# Manage Credentials: http://137.184.124.136:8080/manage/credentials/store/system/domain/_/newCredentials
+# Kind: SSH Username with private key
+# ID: ansible-server-key
+# Username: root
+# Private Key: paste ssh private key content: $ cat ~/.ssh/id_rsa => ------BEGIN OPENSSH PRIVATE KEY----- => If not supported, then
+# Old Format:  ------BEGIN RSA PRIVATE KEY-----
+$ ssh-keygen -p -f .ssh/id_rsa -m pem -P "" -N "" # Classic openssh format
+# Copy content: cat .ssh/ssh_key_rsa_format to Credentials
+# Go back to Jenkins file write logic to connect and copy files to ansible server
+
+# To connect ec2 instances from ansible-playbook Create ec2-server-key credentials same way following ansible-server-key using ansible-jenkins.pem file
+$ cat Downloads/ansible-jenkins.pem
+
+# withCredentials copy ec2-server-key context to ansible server

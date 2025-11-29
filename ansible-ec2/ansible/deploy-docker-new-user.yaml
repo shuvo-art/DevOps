@@ -16,7 +16,9 @@
 
 - name: Install python3, docker and docker-compose on EC2
 #  hosts: docker_server
-  hosts: all
+#  hosts: all
+#  hosts: aws_ec2
+  hosts: tag_Name_dev_server
   become: yes
   gather_facts: False
   tasks:
@@ -77,7 +79,9 @@
 
 - name: Create new linux user
 #  hosts: docker_server
-  hosts: all
+#  hosts: all
+#  hosts: aws_ec2
+  hosts: tag_Name_dev_server
   become: yes
   vars_files:
     - project-vars
@@ -97,7 +101,9 @@
 
 - name: Start docker containers
 #  hosts: docker_server
-  hosts: all
+#  hosts: all
+#  hosts: aws_ec2
+  hosts: tag_Name_dev_server
 #  vars_prompt:
 #    - name: docker_password
 #      prompt: Enter password for docker registry

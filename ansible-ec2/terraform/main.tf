@@ -152,7 +152,21 @@ resource "aws_instance" "myapp-server-three" {
   availability_zone			      = var.avail_zone
 
   tags = {
-    Name = "${var.env_prefix}-server-three"
+    Name = "prod-server"
+  }
+}
+
+resource "aws_instance" "myapp-server-four" {
+  ami                         = data.aws_ami.amazon-linux-image.id
+  instance_type               = "t2.small"
+  key_name                    = "myapp-key"
+  associate_public_ip_address = true
+  subnet_id                   = aws_subnet.myapp-subnet-1.id
+  vpc_security_group_ids      = [aws_security_group.myapp-sg.id]
+  availability_zone			      = var.avail_zone
+
+  tags = {
+    Name = "prod-server-two"
   }
 }
 
