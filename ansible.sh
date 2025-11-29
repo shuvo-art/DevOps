@@ -743,3 +743,5 @@ sh 'scp $keyfile root@167.99.136.157:/root/ssh-key.pem' => sh "scp ${keyfile} ro
 
 # New commit for remote execution with cmd: "ls -l; ansible-playbook my-playbook.yaml"
 # push to repo and Build Now
+
+// Lesson-244 ( Ansible Integration in Jenkins )
