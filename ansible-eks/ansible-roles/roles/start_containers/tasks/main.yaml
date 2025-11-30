@@ -1,0 +1,15 @@
+- name: Copy docker compose
+  copy:
+    src: docker-compose.yaml
+    dest: /home/shuvo/docker-compose.yaml
+
+- name: Docker login
+  docker_login:
+    registry_url: "{{ docker_registry }}"
+    username: "{{ docker_username }}"
+    password: "{{ docker_password }}"
+
+- name: Start container from compose
+  docker_compose:
+    project_src: /home/shuvo
+    state: present

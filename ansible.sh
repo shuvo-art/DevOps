@@ -745,3 +745,119 @@ sh 'scp $keyfile root@167.99.136.157:/root/ssh-key.pem' => sh "scp ${keyfile} ro
 # push to repo and Build Now
 
 // Lesson-244 ( Ansible Integration in Jenkins )
+# Optimization
+
+// Lesson-245 ( Ansible Roles )
+# When lots of Infrastructure, Networks, Applications, then it becomes complex and not maintainable
+# Group your content in roles # Break up large playbooks into smaller manageable files
+# Like a package for your tasks # Extracting tasks from Playbooks
+# Extract tasks and bundle in a role package
+# Re-use roles in different Plays # Much cleaner Plays
+
+# Example of roles:
+- name: Create a linux user
+  hosts: all
+  become: yes
+  vars:
+    user_groups: adm,docker
+  roles:
+    - create_user
+
+- name: Start docker containers
+  hosts: all
+  become: yes
+  become_user: nana
+  vars_files:
+    - project-vars
+  roles:
+    - start_containers
+
+# Tasks that the role executes => tasks/main.yml                         #
+# Static Files that the role deploys => files/my-file.yml                #
+# (Default) Variables for the tasks => vars/main.yml, defaults/main.yml  # => Package
+# Custom modules, which are used within this role => library/my_module.py#
+# Like small applications, standard file structure                       #
+
+collection/
+
+├── galaxy.yml                     # Collection metadata
+├── meta/
+│   └── runtime.yml               # Runtime configuration
+├── plugins/
+│   ├── modules/                  # Custom modules
+│   │   └── module1.py
+│   ├── inventory/               # Dynamic inventory plugins
+│   ├── filter/                  # Custom filters
+│   └── lookup/                  # Custom lookup plugins
+├── roles/                        # Reusable roles
+│   ├── common/
+│   │   ├── tasks/
+│   │   ├── handlers/
+│   │   ├── templates/
+│   │   ├── files/
+│   │   ├── vars/
+│   │   ├── defaults/
+│   │   └── meta/
+│   ├── webservers/
+│   └── .../
+├── playbooks/                    # Playbooks
+│   ├── site.yml
+│   ├── webservers.yml
+│   └── fooservers.yml
+├── inventory/                    # Inventory files
+│   ├── hosts
+│   ├── hosts_prod
+│   └── hosts_dev
+├── vars/                         # Variable files
+│   ├── common.yml
+│   └── environment.yml
+├── templates/                    # Jinja2 templates
+│   └── config.j2
+├── tests/                        # Test files
+│   ├── test_playbook.yml
+│   └── test_inventory
+└── README.md
+```
+
+# Default Variables: Parameterize role, but execute without having to define variables
+# Possiblity to overwrite default variables
+# Use existing Roles from community like: Mysql database configuration, Install Nginx on Ubuntu, etc..
+# Ansible Galaxy: To find Collections or Roles
+# Git Repository: To find Roles
+
+# Create Roles & use Roles in your Playbook
+# Like Function: extract common logic, use function in different places with different parameters
+
+# Check out roles creation we need ec2 servers
+$ terraform apply --auto-approve
+$ ansible-playbook deploy-docker-with-roles.yaml -i inventory_aws_ec2.yaml
+
+# check existing deployment
+$ ssh ec2-user@ec2-15-188-80-52.eu-west-3.compute.amazonaws.com
+$ sudo docker ps
+
+# Rurun for docker-compose.yaml in files folder
+$ ansible-playbook deploy-docker-with-roles.yaml -i inventory_aws_ec2.yaml
+
+# Customize Roles with Variables
+# Variable Precedence: from least to greatest (the last listed variables override all other variables)
+# CLI arguments extra vars (for example: -e "user=my-user")
+# roles.start_containers.vars.main.yaml file variables
+# If user's not mentioned variables anywhere defaults.main.yaml files executes
+$ ansible-playbook deploy-docker-with-roles.yaml -i inventory_aws_ec2.yaml
+
+// Lesson-246 (Premetheus)
+# Create a K8s cluster with EKS
+# Deploy Microservice app
+# Deploy Prometheus Monitoring Stack
+# Monitor Cluster worker Nodes(cpu,ram,storage)
+# Monitor K8s components(Workloads,pods,deployment,services)
+# Monitor 3rd-party application Redis # Deploy Redis Exporter
+# Monitor own application
+# Infrastructure level, Platform level, Application level
+# pull metrics above 3 level and data visualization using Prometheus UI(Grafana)
+# Alertmanager send Email using alert rules configuring Receiver
+
+// Lesson-247 (Premetheus - Intro)
+
+
