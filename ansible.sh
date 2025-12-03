@@ -859,5 +859,457 @@ $ ansible-playbook deploy-docker-with-roles.yaml -i inventory_aws_ec2.yaml
 # Alertmanager send Email using alert rules configuring Receiver
 
 // Lesson-247 (Premetheus - Intro)
+# Error monitoring: Downtime, Latency, Traffic, Saturation, Errors
+# Example: Memory outage: kicks container, database pod dies, backend and frontend not works
+# prometheus monitor and notify, logs: Available Space vs ElasticSearch Consumption
+# Monitoring networks loads, alerting
 
+# Prometheus Server: Storage:Time Series Database: Store metrics data of cpus, exception and storages info
+#                    Retrival:Data Retrival Worker: pulls metrics data from application, services, server: Store them on Storage
+#                    HTTP Server: Accept PromQL queries: API request to fetch data from Storage and Show in Dashboard Or Grafana
+
+# Monitor: Linux/Windows Server, Apache Server, Single Application, Service:Database
+# Units: CPU Status, Memory/Disk space, Exception Count, Requests Count, Request Duration In Metrices
+
+# Metrics: HELP: description of what the metrics is..
+#          TYPE: Counter: How many times x happend?
+#                Gauge: Current Value of x?
+#                Histogram: how long or how big request?
+
+# Collecting Metrics Data from Targets: pulls over HTTP, hostaddress/metrics endpoint, correct format
+# Exporter: fetches metrics from Target service, convert correct format, expose /metrics endpoint for Data Retrival Worker
+
+# Monitor Linux Server: Download node exporter, untar & execute, converts metrics of server, expose /metrics endpoint, configure prometheus to scrape that endpoint
+# Exporter available as Docker images: Like mysql db are running with a sidercar mysql exporter container
+
+# Monitor own applications: how many request, how many exceptions, server resource? => Using client libraries expose /metrics endpoint
+
+# Amazon Cloud Watch/New Relic: Applications/Servers push to a centralized collection platform
+# Prometheus targets/Pushgateway(short lived job)
+# prometheus.yaml: 
+global:
+  scrape_interval: 15s        # how often prometheus will scrape its targets
+  evaluation_interval: 15s    # how often rules applied
+
+rule_files:
+  # - "first.rules"
+  # - "second.rules"     # Rules for aggregating metric values for creating alerts when condition met
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']  # What resource prometheus monitors with /metrics endpoint
+  - job_name: node_exporter
+    scrape_interval: 1m               # default for each job
+    scrape_timeout: 1m                # metrics_path: "/metrics"
+    static_configs:                   # scheme: "http"  
+      - targets: ['localhost:9100']
+
+# Prometheus Server: push alert based on alert rules from the config files: Alertmanager:notify Slack or Email
+# Prometheus Data Storage: PromQL query through Grafana
+# Example: http_requests_total{status!~"4.."}: rate(http_requests_total[5m])[30m:]
+
+# Prometheus Federation: Allows a Prometheus server to scrape data from other Prometheus servers
+
+// Lesson-248 (Setup Prometheus in EKS Cluster)
+# Non efficient: Create all configuration YAML file and execute right order(sts,cm,secret,deploy) Prometheus, Grafana, Alertmanager
+# Efficient: Using an operator: Manager of all prometheus components: Find Prometheus operator, deploy on k8s
+# Most efficient: Using Helm chart to deploy operator: Helm + Operator
+# Steps: Create EKS cluster, Deploy MS application, Deploy Prometheus Stack, Monitor K8s cluster, Monitor MS application
+# Create an IAM user or role with EKS permissions (AmazonEKSFullAccess or granular policies: eks:, ec2:, iam:, cloudformation:, autoscaling:, elb:, route53:, ecr:)
+# Configure AWS credentials locally: aws configure
+# Tools: Install eksctl, kubectl, aws CLI, and Helm
+sudo apt update
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
+  | tar xz -C /tmp && sudo mv /tmp/eksctl /usr/local/bin
+curl -LO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+sudo apt install -y awscli
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Basic quick cluster (dev/test):
+# quick cluster using managed nodegroup
+eksctl create cluster \
+  --name my-eks-cluster \
+  --region us-east-1 \
+  --version 1.26 \
+  --nodegroup-name standard-workers \
+  --node-type t3.medium \
+  --nodes 3 \
+  --nodes-min 2 \
+  --nodes-max 5 \
+  --managed
+
+# Production-grade cluster with YAML config
+$ eksctl create cluster -f cluster.yaml
+# eksctl will update kubeconfig automatically, or use aws
+aws eks update-kubeconfig --name my-production-cluster --region us-east-1
+kubectl get nodes
+kubectl get pods -A
+
+# Associate IAM OIDC provider (if not enabled; eksctl can do it during create)
+eksctl utils associate-iam-oidc-provider --cluster my-production-cluster --approve
+
+# Install required addons (IRSA, Load Balancer controller, CSI, metrics, autoscaler)
+# Create IAM Service Account for ALB (or use eksctl helper)
+eksctl create iamserviceaccount \
+  --cluster my-production-cluster \
+  --namespace kube-system \
+  --name aws-load-balancer-controller \
+  --attach-policy-arn arn:aws:iam::aws:policy/AWSLoadBalancerControllerPolicy \
+  --approve
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=my-production-cluster \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+
+# Install EBS CSI driver
+eksctl create addon --name aws-ebs-csi-driver --cluster my-production-cluster --force
+
+# Install metrics-server and cluster-autoscaler
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+eksctl create iamserviceaccount --cluster my-production-cluster --namespace kube-system --name cluster-autoscaler \
+  --attach-policy-arn arn:aws:iam::aws:policy/AutoScalingFullAccess --approve
+# Deploy cluster-autoscaler using Helm or manifest and annotate service account
+
+# Ensure StorageClass exists for EBS CSI driver, verify dynamic provisioning:
+kubectl get storageclass
+
+# Nana Video-248
+$ eksctl create cluster # default region, default AWS credentials, 2 Worker Nodes
+$ kubectl get node # two nodes as output
+# ip-192-168-18-35.eu-west-3.compute.internal
+# ip-192-168-82-254.eu-west-3.compute.internal
+
+# Deploy Microservices Application
+$ kubectl apply -f config-microservices.yaml # config.yaml file
+$ kubectl get pod # default ns
+
+# Deploy Prometheus stack using Helm
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo update
+$ kubectl create namespace monitoring
+$ helm install monitoring prometheus-community/kube-prometheus-stack -n monitoring
+$ kubectl --namespace monitoring get pods -l "release=monitoring"
+$ kubectl get all -n monitoring
+
+# Understanding All Prometheus Staffs
+# 2 Statefull set: .../prometheus-monitoring-kube-prometheus-prometheus & alertmanager-monitoring-kube-prometheus-alertmanager
+# 3 Deployments: .../monitoring-kube-prometheus-operator(Created Prometheus & Alertmanager sts), Grafana, .../kube-state-metrics(scraps k8s components)
+# 3 replicaset: Created based on 3 deployments(.../monitoring-kube-prometheus-operator(Created Prometheus & Alertmanager sts), Grafana, .../kube-state-metrics(scraps k8s components))
+# 1 Node Exporter DaemonSet: runs on every worker node(Connect to server, translates worker node metrics to prometheus metrics.ex:cpu usage, load)
+# 7 pods: from Deployments and StatefullSets
+# 8 services: each components has its own
+# worker nodes & k8s components monitored
+
+# From where the above configuration come from?
+$ kubectl get configmap -n monitoring
+# bunch of staff managed by operator, connect to default metrics using rulefiles
+$ kubectl get secret -n monitoring
+# Custom resource definition: extension of k8s api
+$ kubectl get crd -n monitoring
+$ kubectl get statefulset -n monitoring
+$ kubectl describe statefulset prometheus-monitoring-kube-prometheus-prometheus -n monitoring > prom.yaml
+$ kubectl describe statefulset alertmanager-monitoring-kube-prometheus-prometheus -n monitoring > alert.yaml
+
+$ kubectl get deployment -n monitoring
+$ kubectl describe deployment monitoring-kube-prometheus-operator -n monitoring > oper.yaml
+
+# prom.yaml > Containers: prometheus: Images, Port, Args, Mounts(where prometheus gets its configuration data) => everything mounted into prometheus pod => Configuration file: What endpoints to scrape /metrics => Rules Configuration files:Alerting
+# config-reloader: responsible for reloading when configuration files changes
+# From where configuration files and rules files come from?
+# Args => Mounts => Volumes:config
+$ kubectl get secret -n monitoring prometheus-monitoring-kube-prometheus-prometheus -o yaml > secret.yaml
+$ kubectl get configmap -n monitoring prometheus-monitoring-kube-prometheus-prometheus-rulefiles-0 -o yaml > config.yaml
+
+# alert.yaml => Containers: alert manager: Args, Mounts, config-reloader
+# oper.yaml => Containers: alert manager: Args, Mounts, config-reloader
+# orchestrator of whole monitoring stack
+
+# Need to know: How to add/adjust alert rules?
+# How to adjust Prometheus configuration?    # For new endpoints....for scraping....
+
+// Lesson-249 (Data Visualization)
+# Cluster Nodes(2worker node): k8s cluster(application): k8s components(sts,pod,svc): cpu spikes, Insufficient storage, High load, Unauthorized requests..
+$ kubectl port-forward service/monitoring-kube-prometheus-prometheus -n monitoring 9090:9090 
+# Browser: 127.0.0.1:9090: Status: Tagrgets => you need to add the "target" to redis, to monitor.
+# SearchBox expression (METRICS NAMES: apiserver_request_total,container_processes,..cpu..)
+# Status: Configuration(scrape_config: - job_name: => list of job_name) => goto targets:expand one target:ex.apiserver:endpoint/Instance:collection of Instances used for same purpose using labes: job="apiserver", Runtime & Build Information
+# SearchBox: apiserver_request_total{job="apiserver",instance="192.168.126.249:443"}
+
+// Lesson-250 (Grafana)
+# service/monitoring-grafana running on ClusterIP:10.100.112.33 on Port:80
+$ kubectl port-forward service/monitoring-grafana 8080:80 -n monitoring 
+# Browxer: 127.0.0.1:8080: Default Cred: user:admin, pwd:prom-operator
+# Dashboards: Manage: General: Kubernetes/Compute Resources/Cluster
+# Rows are used to group panels together # Folders => Dashboards => Rows => Panels
+# For a specific spike: Dashboards: Manage: General: Kubernetes/Compute Resources/Node (Pods) # You can select specific node or nodes, specific time frame,
+# Panel Edit: PromQL to fetch data to visualize
+# Create own Dashboard: Add an empty panel => PromQL query/Metrics Browser(respective labels) => Use query => Table/Graph view => Apply...
+# Dashboards: Manage: General: Nodes
+# Dashboards: Manage: General: Kubernetes/Compute Resources/Workload
+# Dashboards: Manage: General: Kubernetes/Compute Resources/Pod
+$ kubectl run curl-test --image=radial/busyboxplus:curl -i --tty --rm
+[ root@curl-test:/ ]$ ls
+[ root@curl-test:/ ]$ vi test.sh
+for i in $(seq 1 10000)
+do
+  curl http://a2478368742s87fs9aa8fg98f7a9f-327834982379.eu-west-3.elb.amazonaws.com > text.txt
+done
+[ root@curl-test:/ ]$ chmod +x test.sh
+[ root@curl-test:/ ]$ ./test.sh
+$ kubectl get svc => frontend-external: a2478368742s87fs9aa8fg98f7a9f-327834982379.eu-west-3.elb.amazonaws.com => Search in Browser
+# Check: Dashboards: Manage: General: Kubernetes/Compute Resources/Node (Pods)
+# Access Grafana: Configuration:Users, Configuration:Data sources, if you want add other sources,
+# Explore: For different query
+
+// Lesson-251 ( Alert Rules in Premetheus )
+# 2 steps: Alert rules: cpu usage, pod can't restart & alertmanager sends mail
+# Prometheus dashboard UI: Alerts: alertmanager.rules group, etcd group, kubernetes-apps...
+# AlertmanagerFailedReload, AlertmanagerFailedToSendAlerts, AlertmanagerConfigInconsistent...
+# etcd for control nodes
+# KubePodCrashLooping, KubePodNotReady, KubeStatefulSetReplicasMismatch..
+# Green: inactive or condition not met, Red: Firing. Condition is met(KubeSchedulerDown)
+# expr: PromQL logic..
+# max_over_time(alertmanager_config_last_reload_successful{job="monitoring-kube-prometheus-alertmanager",namespace="monitoring"}[5m]) == 0
+# labels: severity: critical, warning => allows specifying a set of additional labels to attach to alert
+# Slack: critical rules, Emails: warning rules, dev namespace rules, application abc rules,
+# for: 10m => pending state => to resolve itself => firing state
+name: AlertmanagerFailedReload
+expr: max_over_time(alertmanager_config_last_reload_successful{job="monitoring-kube-prometheus-alertmanager",namespace="monitoring"}[5m]) == 0
+for: 10m
+labels:
+  severity: critical
+annotations:
+  description: Configuration has failed to load for {{ $labels.namespace }}/{{ $labels.pod }}
+  runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-alertmanagerfailedreload
+  summary: Reloading an alertmanager configuration has failed.
+
+// Lesson-253 (Create Own Alert Rules - Part2)
+# Prometheus Operator extends the k8s API, we create custom k8s resources, Operator takes our custom k8s resource and tells prometheus to reload alert rules
+$ kubectl apply -f alert-rules.yaml
+$ kubectl get PrometheusRule -n monitoring # check main-rules including or not
+
+# To check Prometheus reloaded configuration with new rules
+$ kubectl get pod -n monitoring  #prometheus-monitoring-kube-prometheus-prometheus-0 #2container: prometheus or sidecar(config_reloader)
+$ kubectl logs prometheus-monitoring-kube-prometheus-prometheus-0 -n monitoring # error
+$ kubectl logs prometheus-monitoring-kube-prometheus-prometheus-0 -n monitoring -c config-reloader # reloaded with current times
+$ kubectl logs prometheus-monitoring-kube-prometheus-prometheus-0 -n monitoring -c prometheus # msg="Completed loading of configuration files" # with current time
+# Finally Check 127.0.0.1:9090/alerts => main.rules group
+
+// Lesson-254 (Test Created Own Alert Rules - Part3)
+# Cpu stress docker container
+docker run -it --name cpustress --rm containerstack/cpustress --cpu 4 --timeout 30s --metrics-brief
+# Translate it into kubectl
+$ kubectl run cpu-test --image=containerstack/cpustress -- --cpu 4 --timeout 30s --metrics-brief
+$ kubectl get pod # check cpu test
+# Dashboards: Manage: General: Kubernetes/Compute Resources/Cluster
+# General: Kubernetes/Compute Resources/Node (Pods)
+# Check 127.0.0.1:9090/alerts => HostHighCpuLoad => Firing State
+
+// Lesson-255 (Alertmanager - Part 1)
+# Firing => pull metrics from cpu, cluser components = Prometheus server = send the alert to Alertmanager = Email
+$ kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9093:9093 & [3] 81527 # what's this part "& [3] 81527"?
+# 127.0.0.1:9093 => Alerts, Silences, Status, Help => status: config: global, route(which alert goes where), receiver
+global:
+  resolve_timeout: 5m
+  http_config:
+    follow_redirects: true
+  smtp_hello: localhost
+  smtp_require_tls: true
+  pagerduty_url: https://events.pagerduty.com/v2/enqueue
+  opsgenie_api_url: https://api.opsgenie.com/
+  wechat_api_url: https://qyapi.weixin.qq.com/cgi-bin/
+  victorops_api_url: https://alert.victorops.com/integrations/generic/20131114/alert/
+route:
+  receiver: "null"  # Any Alert
+  group_by:
+  - job
+  continue: false
+  routes:            # Specific Alerts
+  - receiver: "null"
+    match:
+      alertname: Watchdog
+    continue: false
+  group_wait: 30s    # send notifications for a group of alerts
+  group_interval: 5m
+  repeat_interval: 12h # how long wait sending again
+receiver: 
+- name: "null"
+templates:
+- /etc/alertmanager/config/*.tmpl
+
+
+// Lesson-256 ( Configure Alertmanager )
+# /etc/alertmanager/config from config-volume (ro)
+# config-volume: Type: Secret, SecretName: alertmanager-monitoring-kube-prometheus-alertmanager-generated 
+$ kubectl get secret alertmanager-monitoring-kube-prometheus-alertmanager-generated -n monitoring -o yaml | less
+apiVersion: v1
+data:
+  alertmanager.yaml: Z2skdlLKFW9R0W9EJFDSKLD......
+kind: Secret
+metadata:
+  creationTimestamp: "2021-07-02T07:53:54Z"
+  labels:
+    managed-by: prometheus-operator
+  managedFields:
+  - apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        .: {}
+        f:alertmanager.yaml: {}
+        ......
+
+$ echo Z2skdlLKFW9R0W9EJFDSKLD...... | base64 -D | less
+# Output:
+global:
+  resolve_timeout: 5m
+  http_config:
+    follow_redirects: true
+  smtp_hello: localhost
+  smtp_require_tls: true
+  pagerduty_url: https://events.pagerduty.com/v2/enqueue
+  opsgenie_api_url: https://api.opsgenie.com/
+  wechat_api_url: https://qyapi.weixin.qq.com/cgi-bin/
+  victorops_api_url: https://alert.victorops.com/integrations/generic/20131114/alert/
+route:
+  receiver: "null"  # Any Alert
+  group_by:
+  - job
+  continue: false
+  routes:            # Specific Alerts
+  - receiver: "null"
+    match:
+      alertname: Watchdog
+    continue: false
+  group_wait: 30s    # send notifications for a group of alerts
+  group_interval: 5m
+  repeat_interval: 12h # how long wait sending again
+receiver: 
+- name: "null"
+templates:
+- /etc/alertmanager/config/*.tmpl
+
+# Create alert-manager-configuration.yaml & email-secret.yaml
+$ kubectl apply -f email-secret.yaml
+$ kubectl apply -f alert-manager-configuration.yaml
+$ kubectl get alertmanagerconfig -n monitoring # main-rules-alert-config as output
+$ kubectl get pod -n monitoring # alertmanager-monitoring-kube-prometheus-alertmanager-0 # 2 Containers => alertmanager & config_reloader
+$ kubectl logs alertmanager-monitoring-kube-prometheus-alertmanager-0 -n monitoring
+$ kubectl logs alertmanager-monitoring-kube-prometheus-alertmanager-0 -n monitoring -c config-reloader # reloaded with current times
+# Check existing configuration merge with our configuration #127.0.0.1:9093/#/status
+# monitoring-main-rules-alert-config-email
+# - send_resolved: false # notification that the issue was resolved
+# Check Label "alertname:HostHighCpuLoad", Label "namespace:monitoring" => send to receiver
+
+// Lesson-257 ( Test Email Notification )
+$ kubectl delete pod cpu-test
+$ kubectl run cpu-test --image=containerstack/cpustress -- --cpu 4 --timeout 60s --metrics-brief
+# HostHighCpuLoad firing
+# 127.0.0.2:9093/api/v2/alerts => JSON
+
+# Alertmanager logs:
+$ kubectl logs alertmanager-monitoring-kube-prometheus-alertmanager-0 -n monitoring -c alertmanager # Username and Password not accepted
+$ kubectl get pod # cpu-test => CrashLoopBackOff => 5times => KubernetesPodCrashLooping Firing & send mail
+# Prometheus sends alert => Alertmanager => Check Labels: monitorings, alertname.. => send the mail to receiver.
+
+// Lesson-258 ( Monitor 3rd Party Redis Application )
+# Exporter gets metrics data from service(redis) => translates to prometheus understandable metrics to /metrics endpoint.
+# ServiceMonitor needs to deployed with Exporter.
+
+// Lesson-259 ( Monitor 3rd Party Redis Application - Part 2 )
+# redis-cart <-- redis-exporter(/metrics) <-- pull metrics to Prometheus Server --> push metrics to Alertmanager
+# https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-redis-exporter
+
+$ kubectl get servicemonitor -n monitoring
+$ kubectl get servicemonitor -n monitoring monitoring-kube-prometheus-alertmanager -o yaml | less # check release:monitoring labels
+
+$ kubectl get svc | grep redis
+$ kubectl get pod # check redis
+
+# Install Helm Chart for Redis-exporter
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo add stable https://charts.helm.sh/stable
+$ helm repo update
+
+$ helm install redis-exporter prometheus-community/prometheus-redis-exporter -f redis-values.yaml
+
+# New Documentation:
+# helm install redis-exporter oci://ghcr.io/prometheus-community/charts/prometheus-redis-exporter
+
+$ helm ls
+$ kubectl get pod # check redis-exporter
+$ kubectl get servicemonitor # check redis-exporter-prometheus-redis-exporter
+$ kubectl get servicemonitor redis-exporter-prometheus-redis-exporter -o yaml | less  # check labels: release: monitoring # check spec: endpoints: - targetPort: 9121
+# 127.0.0.1:9090/targets => serviceMonitor/default/redis-exporter-prometheus-redis-exporter
+# Go to home page => secrchbox: redis metrics available
+
+// Lesson-260 ( Alerting and Grafana Dashboard for Redis )
+# Redis is down or too many connections
+$ kubectl apply -f redis-rules.yaml
+$ kubectl get prometheusrule # check redis-rules exist
+# 127.0.0.1:9090/alerts => new redis.rules => RedisDown, RedisTooManyConnections
+
+# Trigger redis down alert
+$ kubectl get pod
+$ kubectl edit deployment redis-cart # set spec: replicas: 0 => :wq
+$ kubectl get pod # check redis-cart down or not
+# redis-exporter get the metrics redis-cart not available # wait # serviceMonitor: interval: 30s then firing
+# alertmanager is configured to send this alert to receiver
+$ kubectl edit deployment redis-cart # set spec: replicas: 1 => :wq
+
+# Create Redis Dashboard in Grafana
+# localhost:8080/dashboard/import => ID: 763 => Load => Name: Redis Exporter Dashboard => General Folder => Prometheous data source => Import
+$ kubectl describe svc redis-exporter-prometheus-redis-exporter # Endpoints: 192.168.89.60:9121 => Dashboard Instance:192.168.89.60:9121 => Last 3 hours => hover: PromQL
+
+// Lesson-261 ( Monitor own application - Part 1 )
+# Monitor Resource Consumption on the nodes(cluster nodes)
+# Monitor Kubernetes components
+# Monitor Prometheus Stack
+# Monitor Third-Party Application(Redis)
+# Monitor own application(Nodejs App) # No exporter available for metrics
+
+# Choose a Prometheus client library according to language(python, java, nodejs) => abstract interface to expose your metrics
+# Libraries implement the Prometheus metric types: Counter, Gauge, Histogram, Summary
+
+# Expose metrics for our Nodejs application using Nodejs client library
+# Deploy Nodejs in the cluster
+# Configure Prometheus to scrape new target(ServiceMonitor)
+# Visualize scraped metrics in Grafana Dashboard 
+#### k8s_cluster(nodejs-app(/metrics) <= pull metrics == Prometheus Server <= query metrics == Grafana)
+
+$ node app/server.js => localhost:3000
+# nodejs <= Browser # two metrics: number of requests, duration of requests(if slow response)
+# using "prom-client" dependencies in package.json, configure above two metrics
+
+# Build Docker Image & Push to private Docker repository dockerhub
+$ docker build -t shuvo83qn:demo-app:nodeapp .
+$ docker login # Username & Password
+$ docker push shuvo83qn:demo-app:nodeapp
+
+# For CI/CD pipeline, push code to git repo => trigger a build => push to Docker repo 
+# Deploy App(docker artifact) into k8s cluster
+$ docker info # To get docker-registry url
+$ kubectl create secret docker-registry my-registry-key --docker-server=https://index.docker.io/v1/ --docker-username=shuvo83qn --docker-password=your_docker_password
+# secret/my-registry-key created
+$ kubectl apply -f k8s-config.yaml # deployment.apps/nodeapp created, service/nodeapp created
+$ kubectl get pod # nodeapp.., redis-exporter-prometheus...
+$ kubectl get svc # kubernetes, nodeapp, redis-exporter-prometheus..
+
+$ kubectl port-forward svc/nodeapp 3000:3000 # Cluster IP:PORT => 10.100.229.99:3000 forward to localhost:3000
+# check 127.0.0.1:3000/metrics
+
+// Lesson-262 ( Configure Prometheus Server to scrape nodejs-app(/metrics) endpoint )
+# ServiceMonitor actually tells prometheus this is the endpoints: "/metrics" you need to scrape
+# localhost:9090/targets => check currently registered targets
+$ kubectl apply -f k8s-config.yaml # check serviceMonitor/default/monitoring-node-app => new target => http_request_operations_total metrics available
+# localhost:9090/config => scrape_config: - job_name: serviceMonitor/default/monitoring-node-app/0 => newly created
+
+# Create new Grafana Dashboard:
+# localhost:8080 => Create => Dashboard => Add an empty panel => PromQL => rate(http_request_operations_total[2m]) => Way to Dashboard name: Node App Telemetry => Save => Request Per Second label
+# Add another panel: PromQL: rate(http_request_duration_seconds_sum[2m]) => Request duration for incoming request
 

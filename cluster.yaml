@@ -1,0 +1,39 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: my-production-cluster
+  region: us-east-1
+  version: "1.26"
+
+vpc:
+  cidr: "10.0.0.0/16"
+  nat:
+    gateway: Single
+  subnets:
+    private:
+      us-east-1a: { cidr: "10.0.1.0/24" }
+      us-east-1b: { cidr: "10.0.2.0/24" }
+      us-east-1c: { cidr: "10.0.3.0/24" }
+
+managedNodeGroups:
+  - name: production-ng-1
+    instanceType: m5.large
+    desiredCapacity: 3
+    minSize: 2
+    maxSize: 6
+    volumeSize: 80
+    ssh:
+      allow: true
+      publicKeyPath: "~/.ssh/ekskey.pub"
+    labels:
+      role: app
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/my-production-cluster: "owned"
+
+iam:
+  withOIDC: true
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["api","audit","authenticator","controllerManager","scheduler"]

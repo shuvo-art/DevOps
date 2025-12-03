@@ -1,0 +1,58 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeapp
+  labels:
+    app: nodeapp
+spec:
+  selector:
+    matchLabels:
+      app: nodeapp
+    template:
+      metadata:
+        labels:         # Tagging with labels
+          app: nodeapp
+      spec:
+        imagePullSecrets:
+        - name: my-registry-key
+        containers:
+        - name: nodeapp
+          image: shuvo83qn/demo-app:nodeapp  # Docker repository image # Needs k8s access to docker private repo # For that create secret using cli 'kubectl create secret ... full command: ansible.sh'
+          ports:
+          - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeapp
+  labels:
+    app: nodeapp
+spec:
+  type: ClusterIP
+  selector:
+    app: nodeapp
+  ports:
+  - name: service  # Refer to Service Monitor endpoints port
+    protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: monitoring-node-app
+  labels:
+    release: monitoring  # Prometheus using this labels
+    app: nodeapp
+spec:
+  endpoints:
+  - path: /metrics
+    port: service
+    targetPort: 3000
+  namespaceSelector:
+    matchNames: # any: true
+    - default
+  selector:
+    matchLabels:          # Match which other's targets has this label 
+      app: nodeapp        # Service Monitor to find application with this labels in default ns to scrape /metrics endpoint
